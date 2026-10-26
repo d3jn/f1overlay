@@ -69,7 +69,8 @@ under a safety car, or where the lap went invalid are skipped.
 ## Running
 
 Requires Python 3.10+ with Tkinter. There are no other dependencies.
-On Debian/Ubuntu, install `python3-tk`.
+On Debian/Ubuntu, install `python3-tk`. On Windows, the python.org installer
+includes Tkinter as long as "tcl/tk and IDLE" stays ticked.
 
 ```bash
 python3 main.py
@@ -105,5 +106,28 @@ python3 scripts/fake_feed.py                    # synthetic 2026 race on 127.0.0
 python3 scripts/fake_feed.py --sc 1 --pit       # under SC, player in the pits
 ```
 
-Windows build: `scripts\build-windows.bat` produces `dist\f1overlay.exe` plus
-`settings.json` (needs `pip install pyinstaller`).
+## Windows executable
+
+From a Windows command prompt in the project folder:
+
+```bat
+python -m venv .venv
+.venv\Scripts\pip install pyinstaller
+.venv\Scripts\activate
+scripts\build-windows.bat
+```
+
+This produces `dist\f1overlay.exe` and copies `settings.json` next to it.
+Ship both together: the exe always reads `settings.json` from its own folder,
+never from PyInstaller's temp directory, so you can edit it after building.
+If the file is missing, the built-in defaults apply.
+
+- The exe has no console window, so settings warnings aren't visible. To see
+  them, run `python main.py` from a terminal.
+- The first launch may trigger a Windows Firewall prompt for UDP. A game on
+  the same PC talks over loopback, which works either way. Allow it if the
+  game runs on another machine or console.
+- The overlay is DPI-aware. On a 125% or 150% scaled display it renders
+  sharply and grows by the same factor instead of being stretched blurry.
+- An unsigned one-file exe can trigger a SmartScreen "unknown publisher"
+  warning on first run.

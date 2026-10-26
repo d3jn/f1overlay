@@ -269,6 +269,26 @@ def pace_segments(layout, ranking, max_width):
 
 # --- the app -------------------------------------------------------------------
 
+def _enable_dpi_awareness():
+    """On Windows, declare the process DPI-aware before Tk starts.
+
+    Otherwise a scaled display (125%, 150%) bitmap-stretches the window and
+    the text blurs. Once aware, Tk sizes fonts by the real DPI, and Layout
+    follows it through `tk scaling`. System-aware only: Tk 8.6 cannot re-layout
+    when the window moves to a monitor with another DPI.
+    """
+    if sys.platform != "win32":
+        return
+    import ctypes
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)  # Windows 8.1+
+    except (AttributeError, OSError):
+        try:
+            ctypes.windll.user32.SetProcessDPIAware()  # Vista+
+        except (AttributeError, OSError):
+            pass
+
+
 def _pick_family():
     available = set(tkfont.families())
     for family in ("Consolas", "DejaVu Sans Mono", "Liberation Mono", "Menlo", "Courier New"):
@@ -282,6 +302,7 @@ class OverlayApp:
     def __init__(self, settings):
         self.settings = settings
 
+        _enable_dpi_awareness()
         self.root = tk.Tk()
         self.root.title("F1 Overlay")
         self.root.configure(bg=BG)
@@ -300,7 +321,9 @@ class OverlayApp:
             tkfont.Font(root=self.root, family=family, size=size),
             tkfont.Font(root=self.root, family=family, size=size, weight="bold"),
             tkfont.Font(root=self.root, family=family, size=max(6, size - 1)),
-            scale=size / BASE_FONT_SIZE,
+            # Fonts are in points, so they already grow with the display DPI;
+            # `tk scaling` is pixels per point, 96 / 72 on an unscaled display.
+            scale=size / BASE_FONT_SIZE * float(self.root.tk.call("tk", "scaling")) / (96 / 72),
         )
         self.canvas = tk.Canvas(self.root, width=self.layout.width, height=self.layout.height,
                                 bg=BG, highlightthickness=0, bd=0)
@@ -365,8 +388,10 @@ class OverlayApp:
         try:
             sock.bind(("0.0.0.0", self.settings.udp_port))
         except OSError as e:
-            print(f"Error: cannot listen on UDP {self.settings.udp_port}: {e}", file=sys.stderr)
+            # Set before printing: the print can fail (see main._warn) and the UI
+            # must still learn why there is no data.
             self.socket_error = str(e)
+            _print_safe(f"Error: cannot listen on UDP {self.settings.udp_port}: {e}")
             self._signal()
             return
 
@@ -647,3 +672,12 @@ class OverlayApp:
 
 def _car(cars, idx):
     return cars[idx] if cars is not None and idx < len(cars) else None
+
+
+def _print_safe(text):
+    """print() to stderr that survives a legacy Windows code page. The OS
+    error text is localised, so it may not be ASCII."""
+    try:
+        print(text, file=sys.stderr)
+    except UnicodeEncodeError:
+        print(text.encode("ascii", "replace").decode("ascii"), file=sys.stderr)

@@ -71,7 +71,15 @@ class Settings:
 
 
 def _warn(message):
-    print(f"Warning: {message}", file=sys.stderr)
+    # The message can quote settings.json text such as driver names. On
+    # Windows a redirected stderr uses the legacy code page, which can't encode
+    # everything; a warning must never crash startup. (In the --noconsole exe
+    # stderr is None and print() is a no-op.)
+    text = f"Warning: {message}"
+    try:
+        print(text, file=sys.stderr)
+    except UnicodeEncodeError:
+        print(text.encode("ascii", "replace").decode("ascii"), file=sys.stderr)
 
 
 def normalize_race_number(num):

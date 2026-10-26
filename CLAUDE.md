@@ -41,6 +41,11 @@ A single-page Tkinter overlay for F1 25 **2026 Season Pack** UDP telemetry
   wear and wing damage for other cars. The UI shows `·` for those.
 - Adding a column: add it to `DRIVER_COLUMNS` with its worst-case content,
   then draw it in `OverlayApp._draw_driver`.
-- `font_size` scales the window proportionally. Size anything that isn't
-  text with `Layout.px(n)` (n in pixels at `BASE_FONT_SIZE` 10), never with a
-  bare pixel literal, or it stops scaling.
+- `font_size` and the display DPI scale the window proportionally: fonts are
+  in points, and `Layout.scale` = font_size / 10 × `tk scaling` / (96/72).
+  Size anything that isn't text with `Layout.px(n)` (n in pixels at size 10
+  on a 96-DPI display), never with a bare pixel literal, or it stops scaling.
+- Windows: `ui._enable_dpi_awareness()` must run before `tk.Tk()`. The
+  `--noconsole` exe has `sys.stderr = None` (print is then a no-op). Keep
+  stderr output going through `main._warn` / `ui._print_safe`, which survive
+  a legacy code page.
