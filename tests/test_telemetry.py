@@ -104,11 +104,12 @@ def session_packet(session_type=15, track_id=42, track_length=5470, sc_status=0,
 
 def lap_entry(last_lap=0, s1=(0, 0), s2=(0, 0), leader=(0, 0), lap_distance=0.0,
               total_distance=0.0, position=1, lap_num=1, pit_status=0, sector=0,
-              invalid=0, unserved_sg=0, result_status=2, serve_pen=0):
+              invalid=0, penalties=0, unserved_dt=0, unserved_sg=0, result_status=2,
+              serve_pen=0):
     return struct.pack(LAP, last_lap, 0, s1[0], s1[1], s2[0], s2[1], 0, 0, leader[0], leader[1],
                        lap_distance, total_distance, 0.0,
                        position, lap_num, pit_status, 0, sector,
-                       invalid, 0, 0, 0, 0, unserved_sg, 1, 4, result_status,
+                       invalid, penalties, 0, 0, unserved_dt, unserved_sg, 1, 4, result_status,
                        0, 0, 0, serve_pen, 0.0, 255)
 
 
@@ -220,8 +221,8 @@ class ParseTest(unittest.TestCase):
     def test_lap(self):
         entry = lap_entry(last_lap=91234, s1=(12345, 1), s2=(500, 0), leader=(2500, 1),
                           lap_distance=2500.5, total_distance=12500.25, position=7, lap_num=3,
-                          pit_status=1, sector=2, invalid=1, unserved_sg=2, result_status=3,
-                          serve_pen=1)
+                          pit_status=1, sector=2, invalid=1, penalties=15, unserved_dt=1,
+                          unserved_sg=2, result_status=3, serve_pen=1)
         lap = payload(lap_packet({LAST: entry}))[LAST]
         self.assertEqual(lap, {
             "last_lap_ms": 91234,
@@ -235,6 +236,8 @@ class ParseTest(unittest.TestCase):
             "pit_status": 1,
             "sector": 2,
             "lap_invalid": 1,
+            "penalties": 15,
+            "unserved_dt": 1,
             "unserved_sg": 2,
             "result_status": 3,
             "serve_pen_at_stop": 1,

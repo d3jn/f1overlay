@@ -14,7 +14,7 @@ TRACK = 5000.0
 
 def lap(position, delta=0.0, total=None, lap_num=10, lap_distance=None, pit_status=0,
         result_status=2, last_lap_ms=90_000, s1_ms=0, s2_ms=0, sector=0, invalid=0,
-        unserved_sg=0, serve_pen=0):
+        penalties=0, unserved_dt=0, unserved_sg=0, serve_pen=0):
     """A car's lap dict. Distance defaults to a fixed spot on the lap."""
     if total is None:
         total = (lap_num - 1) * TRACK + 2500.0
@@ -24,7 +24,8 @@ def lap(position, delta=0.0, total=None, lap_num=10, lap_distance=None, pit_stat
         "last_lap_ms": last_lap_ms, "s1_ms": s1_ms, "s2_ms": s2_ms,
         "delta_to_leader": delta, "lap_distance": lap_distance, "total_distance": total,
         "position": position, "lap_num": lap_num, "pit_status": pit_status, "sector": sector,
-        "lap_invalid": invalid, "unserved_sg": unserved_sg, "result_status": result_status,
+        "lap_invalid": invalid, "penalties": penalties, "unserved_dt": unserved_dt,
+        "unserved_sg": unserved_sg, "result_status": result_status,
         "serve_pen_at_stop": serve_pen,
     }
 
@@ -71,6 +72,23 @@ class StandingsTest(unittest.TestCase):
         me = lap(5, delta=10.0)
         car = lap(9, delta=95.0, total=me["total_distance"] - 0.95 * TRACK)
         self.assertEqual(race.relative_gap(car, me, TRACK), (0, 85.0))
+
+
+class PenaltyTest(unittest.TestCase):
+
+    def test_clean_car_owes_nothing(self):
+        self.assertEqual(race.penalty_seconds(lap(1)), 0)
+
+    def test_time_penalties_and_stop_gos_add_up(self):
+        self.assertEqual(race.penalty_seconds(lap(1, penalties=5, unserved_sg=2)), 25)
+
+    def test_served_stop_go_leaves_the_total(self):
+        before = race.penalty_seconds(lap(1, penalties=5, unserved_sg=1))
+        after = race.penalty_seconds(lap(1, penalties=5, unserved_sg=0))
+        self.assertEqual((before, after), (15, 5))
+
+    def test_drive_through_has_no_time(self):
+        self.assertEqual(race.penalty_seconds(lap(1, unserved_dt=1)), 0)
 
 
 class PitProjectionTest(unittest.TestCase):
@@ -259,6 +277,10 @@ class FormatTest(unittest.TestCase):
     def test_pace_gap(self):
         self.assertEqual(race.format_pace_gap(503), "+0.503")
         self.assertEqual(race.format_pace_gap(12_345), "+12.3")
+
+    def test_penalty_fits_four_chars(self):
+        self.assertEqual([race.format_penalty(s) for s in (5, 15, 99, 255)],
+                         ["+5s", "+15s", "+99s", "+99s"])
 
     def test_offset(self):
         self.assertEqual([race.format_offset(m) for m in (0, 5, 45, 60, 90, 105, 120)],

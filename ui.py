@@ -100,7 +100,11 @@ DRIVER_COLUMNS = (
     ("tyre", "S", "badge", "T"),
     ("wear", "100%", "e", "WEAR"),
     ("fw", "100/100", "e", "FW"),
+    ("pen", race.format_penalty(99), "pill", "PEN"),
+    ("dt", "DT", "pill", ""),
 )
+# Header labels that start at their column's left edge and span the next one.
+SPANNING_LABELS = {"mode", "pen"}
 
 # The widest pit and pace rows the window must fit.
 WORST_PIT = race.PitProjection(loss=99, sc_status=race.SC_VIRTUAL, position_now=10,
@@ -565,8 +569,10 @@ class OverlayApp:
             if key == "name" and signal in ("stale", "no_signal"):
                 label, color = ("STALE", WARN) if signal == "stale" else ("NO SIGNAL", BAD)
             if label:
-                # "ERS" spans the mode pill and the percentage beside it.
-                self._cell(key, mid, label, color, L.small, "w" if key == "mode" else None)
+                # "ERS" spans the mode pill and the percentage beside it, "PEN"
+                # the time penalty and drive-through pills.
+                self._cell(key, mid, label, color, L.small,
+                           "w" if key in SPANNING_LABELS else None)
 
     def _draw_driver(self, idx, top, me, track_length):
         L, c = self.layout, self.canvas
@@ -624,6 +630,12 @@ class OverlayApp:
                     self._cell("fw", mid, f"{fl}/{fr}", damage_color(max(fl, fr)))
                 else:
                     self._cell("fw", mid, "–", FAINT)
+
+        penalty = race.penalty_seconds(lap)
+        if penalty:
+            self._draw_pill("pen", mid, race.format_penalty(penalty), BRIGHT, BAD)
+        if lap["unserved_dt"]:
+            self._draw_pill("dt", mid, "DT", BAD, None, outline=BAD)
 
     def _driver_name(self, idx):
         part = _car(self.participants, idx)

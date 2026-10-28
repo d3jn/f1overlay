@@ -134,6 +134,9 @@ def parse_lap(data):
         # 0 = S1, 1 = S2, 2 = S3.
         "sector": l[17],
         "lap_invalid": l[18],
+        # Seconds of time penalties still to be added to the race time.
+        "penalties": l[19],
+        "unserved_dt": l[22],
         "unserved_sg": l[23],
         # 0 invalid, 1 inactive, 2 active, 3 finished, 4 DNF, 5 DSQ, 6 NC, 7 retired.
         "result_status": l[26],

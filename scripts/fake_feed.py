@@ -3,7 +3,8 @@ without the game.
 
 The feed is built to hit worst-case widths: 24 cars, 10+ character and long
 gamertag names, a restricted car, a pre-2026-regs car, two lapped cars, every
-compound and ERS mode, 100/100 wing damage and 12 weather samples.
+compound and ERS mode, 100/100 wing damage, every penalty cell (+5s, +15s from
+a stop-go, a lone DT, +99s with a DT) and 12 weather samples.
 
     python3 scripts/fake_feed.py                # race on 127.0.0.1:20777
     python3 scripts/fake_feed.py --sc 1         # under safety car (2 = VSC)
@@ -28,6 +29,8 @@ PLAYER = 6
 RESTRICTED = 9
 PRE_2026 = 11
 LAPPED = (22, 23)
+# Car index -> (time penalty seconds, unserved drive-throughs, unserved stop-gos).
+PENALTIES = {3: (5, 0, 0), 5: (5, 0, 1), PLAYER: (10, 0, 0), 7: (0, 1, 0), 8: (99, 1, 0)}
 NAMES = ["NORRIS", "LECLERC", "HAMILTON", "Max Verstappen", "RUSSELL", "PIASTRI", "YANIUK",
          "ALONSO", "GASLY", "AVeryLongGamertag123", "OCON", "STROLL", "HULKENBERG",
          "BORTOLETO", "ANTONELLI", "HADJAR", "LAWSON", "ALBON", "SAINZ", "BEARMAN",
@@ -80,11 +83,12 @@ class Feed:
             last = int((lt + jitter / 2) * 1000)
             delta = (dist[leader] - dist[i]) / (TRACK / lt)
             pit = 1 if self.args.pit and i == PLAYER else 0
+            pen, dt, sg = PENALTIES.get(i, (0, 0, 0))
             body += t.LAP_DATA.pack(
                 last, 0, s1 % 60_000, s1 // 60_000, s2 % 60_000, s2 // 60_000, 0, 0,
                 int(delta * 1000) % 60_000, int(delta * 1000) // 60_000,
                 lap_dist, dist[i], 0.0, order.index(i) + 1, lap_num, pit, 0, sector,
-                0, 0, 0, 0, 0, 0, i + 1, 4, 2, 0, 0, 0, 0, 0.0, 255)
+                0, pen, 0, 0, dt, sg, i + 1, 4, 2, 0, 0, 0, 0, 0.0, 255)
         return header(fmt, t.PACKET_LAP) + body + b"\xff\xff"
 
     def session_packet(self, fmt):

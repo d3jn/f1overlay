@@ -74,6 +74,14 @@ def relative_gap(other, me, track_length):
     return 0, other["delta_to_leader"] - me["delta_to_leader"]
 
 
+def penalty_seconds(lap):
+    """Penalty time the car still owes: time penalties plus STOP_GO_SECONDS for
+    each unserved stop-go. The game reports both as still to be served, so a
+    penalty served at a stop drops out of the total. Drive-throughs cost a
+    track-dependent pit lane trip rather than a fixed time and are left out."""
+    return lap["penalties"] + lap["unserved_sg"] * STOP_GO_SECONDS
+
+
 # --- pit projection ----------------------------------------------------------
 
 @dataclass
@@ -300,6 +308,11 @@ def format_magnitude(laps, seconds):
 def format_pace_gap(ms):
     s = ms / 1000.0
     return f"+{s:.3f}" if s < 10 else f"+{min(s, 99.9):.1f}"
+
+
+def format_penalty(seconds):
+    """At most 4 characters: '+5s', '+15s', and '+99s' for anything longer."""
+    return f"+{min(seconds, 99)}s"
 
 
 def format_offset(minutes):

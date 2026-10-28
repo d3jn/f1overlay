@@ -43,6 +43,7 @@ full.
 | T | Visual tyre compound: S red, M yellow, H white, I green, W blue. |
 | WEAR | Most-worn tyre. Green < 40%, yellow < 60%, orange < 75%, red above. |
 | FW | Front wing damage, left/right %. |
+| PEN | Red box: penalty seconds still owed, time penalties plus 10 s per unserved stop-go. A penalty served at a stop drops out. Capped at `+99s`. An outlined red `DT` marks an unserved drive-through. |
 
 A driver with "Your Telemetry" set to Restricted has their ERS, tyre wear and
 wing damage zeroed by the game. Those cells show `·` instead of a fake 0.
