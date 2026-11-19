@@ -52,6 +52,10 @@ ERS_MODE_COLORS = {
     "H": ("#d97706", "#111827"),
     "B": ("#e11d48", "#ffffff"),
 }
+# ERS deploy mode letter -> row background for other drivers: WARN yellow,
+# purple and BAD red blended into BG. They are about as light as PLAYER_BG, so
+# every text color keeps the contrast it already has on the player row.
+ERS_ROW_TINTS = {"M": "#312d17", "H": "#312248", "B": "#3d1d20"}
 # Weather type -> strip color: clear, light cloud, overcast, light rain,
 # heavy rain, storm.
 WEATHER_COLORS = {0: "#f59e0b", 1: "#d1d5db", 2: "#6b7280", 3: "#7dd3fc", 4: "#2563eb", 5: "#7c3aed"}
@@ -594,8 +598,22 @@ class OverlayApp:
         mid = top + L.row_h / 2
         lap = self.laps[idx]
         is_player = idx == self.player_idx
+        status = _car(self.statuses, idx)
+        damage = _car(self.damages, idx)
+        telem2 = _car(self.telemetry2, idx)
+        part = _car(self.participants, idx)
+        # Restricted cars report zeros for ERS, wear and wing damage.
+        restricted = not is_player and part is not None and part["your_telemetry"] == 0
+
+        # The player row keeps its own highlight; others are tinted by ERS mode.
         if is_player:
-            c.create_rectangle(0, top, L.width, top + L.row_h, fill=PLAYER_BG, width=0)
+            row_bg = PLAYER_BG
+        elif status is not None and not restricted:
+            row_bg = ERS_ROW_TINTS.get(race.ERS_MODE_LETTERS.get(status["ers_mode"]))
+        else:
+            row_bg = None
+        if row_bg:
+            c.create_rectangle(0, top, L.width, top + L.row_h, fill=row_bg, width=0)
 
         self._cell("pos", mid, str(lap["position"]), FG if is_player else DIM)
         self._cell("name", mid, race.short_name(self._driver_name(idx)),
@@ -605,13 +623,6 @@ class OverlayApp:
             close = seconds is not None and abs(seconds) < 1.0
             self._cell("gap", mid, race.format_gap(laps_b, seconds),
                        DIM if laps_b else (BRIGHT if close else FG), L.bold if close else None)
-
-        status = _car(self.statuses, idx)
-        damage = _car(self.damages, idx)
-        telem2 = _car(self.telemetry2, idx)
-        part = _car(self.participants, idx)
-        # Restricted cars report zeros for ERS, wear and wing damage.
-        restricted = not is_player and part is not None and part["your_telemetry"] == 0
 
         if telem2 is not None and telem2["regs_2026"]:
             if telem2["overtake_active"]:

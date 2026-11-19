@@ -39,7 +39,7 @@ full.
 |---|---|
 | GAP | Time from you to that car (negative = ahead). `+1L` / `-1L` for a car a lap down / up. Under 1 s is bold. |
 | OT | Overtake Mode: solid green = active, outlined = available, blank = unavailable or pre-2026 car. |
-| ERS | Deploy mode (N none, M medium, H hotlap, B boost), then store %. Red under 20%. |
+| ERS | Deploy mode (N none, M medium, H hotlap, B boost), then store %. Red under 20%. Other drivers' rows are also tinted by mode: yellow medium, purple hotlap, red boost. |
 | T | Visual tyre compound: S red, M yellow, H white, I green, W blue. |
 | WEAR | Most-worn tyre. Green < 40%, yellow < 60%, orange < 75%, red above. |
 | FW | Front wing damage, left/right %. |
