@@ -91,6 +91,7 @@ Every key is optional.
 | Key | Default | |
 |---|---|---|
 | `udp_port` | `20777` | Port to listen on. |
+| `udp_forward` | `[]` | `["127.0.0.1:27778", "192.168.1.20:20777"]` relays a byte-for-byte copy of every datagram received to each `host:port` (IPv4 address or hostname), so other telemetry apps can run alongside. Nothing is filtered: wrong-format and unparsed packets go out too. A destination that is down just drops its copies. Your own `udp_port` on this machine is refused, since it would loop. |
 | `borderless` | `false` | Remove the window frame. |
 | `always_on_top` | `false` | Start on top (also toggled from the right-click menu). |
 | `opacity` | `1` | Window opacity, 0–1. |

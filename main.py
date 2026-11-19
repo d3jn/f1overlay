@@ -65,6 +65,8 @@ class Settings:
     drivers: dict = field(default_factory=dict)
     # Track id -> (green, safety car) pit loss in seconds.
     pit_times: dict = field(default_factory=dict)
+    # (host, port) destinations that get a byte-for-byte copy of every datagram.
+    udp_forward: tuple = ()
 
     def pit_loss(self, track_id):
         return self.pit_times.get(track_id, DEFAULT_PIT_LOSS)
@@ -141,6 +143,30 @@ def _pit_times(user_dict):
     return pit_times
 
 
+def _udp_forward(entries):
+    targets = []
+    if not isinstance(entries, list):
+        _warn("'udp_forward' in settings.json must be a list of \"host:port\" strings")
+        return ()
+    for entry in entries:
+        host, port = "", 0
+        if isinstance(entry, str):
+            host, _, port_text = entry.rpartition(":")
+            host = host.strip()
+            try:
+                port = int(port_text)
+            except ValueError:
+                pass
+        if not host or not 0 < port < 65536:
+            _warn(f"skipping udp_forward entry {entry!r}: expected \"host:port\"")
+            continue
+        if (host, port) in targets:
+            _warn(f"duplicate udp_forward entry {entry!r}")
+            continue
+        targets.append((host, port))
+    return tuple(targets)
+
+
 def load_settings(path=SETTINGS_PATH):
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -164,6 +190,7 @@ def load_settings(path=SETTINGS_PATH):
         ers_capacity_j=_positive_number(raw.get("ers_capacity_j"), defaults.ers_capacity_j),
         drivers=_drivers(raw.get("drivers", [])),
         pit_times=_pit_times(raw.get("pitstop_time_lost", {})),
+        udp_forward=_udp_forward(raw.get("udp_forward", [])),
     )
 
 

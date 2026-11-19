@@ -1,6 +1,7 @@
 """Tk overlay: one fixed-size canvas, redrawn from the latest telemetry.
 
-Threading: a daemon thread blocks on the UDP socket, parses each datagram and
+Threading: a daemon thread blocks on the UDP socket, relays each datagram
+unchanged to the `udp_forward` destinations (relay.py), parses it and
 replaces whole attributes on the app (`self.laps = new_list`). It never
 touches Tk. A size-1 queue wakes `_poll` on the Tk thread, which coalesces
 packets into at most one redraw per POLL_MS. Attribute assignment is atomic in
@@ -19,6 +20,7 @@ import tkinter as tk
 import tkinter.font as tkfont
 
 import race
+import relay
 import telemetry
 
 POLL_MS = 100
@@ -399,8 +401,21 @@ class OverlayApp:
             self._signal()
             return
 
+        forwarders, warnings = relay.open_forwarders(self.settings.udp_forward,
+                                                     self.settings.udp_port)
+        for warning in warnings:
+            _print_safe(f"Warning: {warning}")
+
         while True:
             data, _ = sock.recvfrom(4096)
+            # Relay first, before any parsing, and every datagram unfiltered.
+            for out in forwarders:
+                try:
+                    out.send(data)
+                except OSError:
+                    # Nobody listening (ICMP refused) or send buffer full: UDP
+                    # semantics, the copy is dropped.
+                    pass
             header = telemetry.parse_header(data)
             if header is None:
                 continue

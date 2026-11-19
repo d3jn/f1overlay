@@ -25,6 +25,8 @@ A single-page Tkinter overlay for F1 25 **2026 Season Pack** UDP telemetry
 - `ui.py` is the Tk overlay. `Layout` measures fonts once against worst-case
   strings (`DRIVER_COLUMNS`, `WORST_PIT`, `WORST_PACE`), so the window size
   never changes. Every refresh is a full canvas redraw.
+- `relay.py` opens the `udp_forward` sockets. `ui._udp_loop` sends each
+  datagram to them before parsing it.
 - `main.py` handles settings parsing and the entry point. It imports `ui`
   lazily so the settings code works without Tk.
 
@@ -37,6 +39,11 @@ A single-page Tkinter overlay for F1 25 **2026 Season Pack** UDP telemetry
   player (seconds or laps).
 - `tests/test_telemetry.py` restates the layouts independently from the spec.
   Keep it that way, so that a parser typo can't agree with itself.
+- Relay hot path: in `_udp_loop`, forwarding stays the first thing after
+  `recvfrom`, ahead of any parsing or filtering. Keep it as a bare
+  `out.send(data)` per socket, with `OSError` swallowed. Never send from the
+  listening socket: on Windows an ICMP "port unreachable" then raises
+  `ConnectionResetError` from its `recvfrom` and kills the UDP thread.
 - Restricted telemetry (`your_telemetry == 0`) zeroes ERS store/mode, tyre
   wear and wing damage for other cars. The UI shows `·` for those.
 - Adding a column: add it to `DRIVER_COLUMNS` with its worst-case content,

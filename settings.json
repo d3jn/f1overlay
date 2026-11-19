@@ -1,5 +1,6 @@
 {
     "udp_port": 20777,
+    "udp_forward": [],
     "borderless": false,
     "always_on_top": false,
     "opacity": 1,
